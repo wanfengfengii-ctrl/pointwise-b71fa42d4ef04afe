@@ -56,8 +56,10 @@ def open_device(path) -> sqlite3.Connection:
 def open_receiving(path) -> sqlite3.Connection:
     from receiving.receipts import initialize_receipts
     from receiving.rows import initialize_received_rows
+    from receiving.turnover_store import initialize_turnover
     from reporting.snapshots import initialize_reports
 
     return _open_database(path, (
-        initialize_receipts, initialize_received_rows, initialize_reports,
+        initialize_receipts, initialize_turnover, initialize_received_rows,
+        initialize_reports,
     ))

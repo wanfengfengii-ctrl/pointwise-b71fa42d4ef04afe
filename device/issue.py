@@ -50,3 +50,10 @@ def load_issued_pages(db: sqlite3.Connection, batch_id: str) -> tuple[IssuedPage
         FROM issued_pages WHERE batch_id = ? ORDER BY sequence
     ''', (batch_id,))
     return tuple(IssuedPage(*row) for row in issued)
+
+
+def prepare_turnover(db, table_id) -> bytes:
+    # 公开入口挂在 device.issue；实现位于 device.freeze。
+    from device.freeze import prepare_turnover as freeze_section
+
+    return freeze_section(db, table_id)

@@ -34,15 +34,32 @@ def initialize_catalog(db: sqlite3.Connection) -> None:
             PRIMARY KEY (table_id, code)
         )
     ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS retired_tables (
+            table_id TEXT PRIMARY KEY NOT NULL REFERENCES code_tables(table_id)
+        )
+    ''')
+
+
+def is_retired_table(db: sqlite3.Connection, table_id: str) -> bool:
+    return db.execute(
+        'SELECT 1 FROM retired_tables WHERE table_id = ?', (table_id,)
+    ).fetchone() is not None
 
 
 def load_table(db: sqlite3.Connection, table_id: str) -> CodeTable | None:
     if db.execute('SELECT 1 FROM code_tables WHERE table_id = ?', (table_id,)).fetchone() is None:
         return None
+    if is_retired_table(db, table_id):
+        # 退出的表号只保留历史出处，不再提供代码含义。
+        return None
     rows = db.execute(
         'SELECT code, segment FROM code_entries WHERE table_id = ?', (table_id,)
     )
-    return CodeTable(table_id, tuple((restore_integer(code), segment) for code, segment in rows))
+    entries = tuple((restore_integer(code), segment) for code, segment in rows)
+    if not entries:
+        return None
+    return CodeTable(table_id, entries)
 
 
 def insert_table(db: sqlite3.Connection, table: CodeTable) -> None:
